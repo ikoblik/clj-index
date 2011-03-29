@@ -46,7 +46,49 @@
     (is (= (find-z [1 2 nil 1 2 'space 1 2 nil 1 3 1]) 
       [0 0 0 2 0 0 4 0 0 1 0 1]))))
 
-(deftest find-L-empty-string-or-collection
-  (is (= (find-L "") nil))
-  (is (= (find-L nil) nil))
-  (is (= (find-L []) nil)))
+(deftest find-reverse-N-reverse-of-z
+  (testing "Null cases"
+    (are [x] (nil? x)
+	 (find-reverse-N nil)
+	 (find-reverse-N [])
+	 (find-reverse-N "")))
+  (testing "As z-value of reverse"
+    (is (= (binding [find-z (fn [s] (when (= s [2 1]) :my-result))]
+	     (find-reverse-N [1 2])) :my-result))))
+
+(deftest find-L-map-all-cases
+  (testing "Null cases"
+    (are [x] (nil? x)
+	 (find-L-map nil)
+	 (find-L-map [])
+	 (find-L-map "")))
+  (testing "Usual cases"
+    (is (= (find-L-map (find-reverse-N "cabdabdab")) {4 5, 7 2}))
+    (is (= (find-L-map (find-reverse-N "ab:abab")) {5 4}))
+    (is (= (find-L-map (find-reverse-N "dabababab")) {7 2, 5 4, 3 6}))))
+
+(deftest find-L-all-cases
+  (testing "Null cases"
+    (are [x] (nil? x)
+	 (find-L nil)
+	 (find-L [])
+	 (find-L "")))
+  (testing "Usual cases"
+    (is (= (find-L (find-reverse-N "cabdabdab")) [0 0 0 0 5 0 0 2 0]))
+    (is (= (find-L (find-reverse-N "ab:abab")) [0 0, 0, 0 0, 5 0]))))
+
+(deftest find-l-all-cases
+  (testing "Null cases"
+    (are [x] (nil? x)
+	 (find-l nil)
+	 (find-l [])
+	 (find-l "")))
+  (testing "Usual cases"
+    (is (= (find-l (find-reverse-N "abcde")) [0 0 0 0 0]))
+    (is (= (find-l (find-reverse-N "aaaaa")) [4 4 3 2 1]))
+    (is (= (find-l (find-reverse-N "abcabcabc")) [6 6 6 6 3 3 3 0 0]))
+    (is (= (find-l (find-reverse-N "abba")) [1 1 1 1])))
+  (testing "Source is not a vector"
+    (is (= (find-l (list 0 5 0 3 0 1)) [5 5 3 3 1 1]))))
+
+#_(run-all-tests)
