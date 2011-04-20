@@ -50,7 +50,7 @@
   [pattern]
   (find-z (reverse pattern)))
 
-(defn find-L-map [rev-n-values]
+(defn- find-L-map [rev-n-values]
   (when (seq rev-n-values)
     (let [n (count rev-n-values)]
       (persistent!
@@ -72,14 +72,11 @@
       see Gusfield p. 20"
      (when (seq rev-n-values) ;discard empty sequences
        (let [n (count rev-n-values)
-	     n-2 (- n 2)]
-	 (loop [l-val-map (transient {}) cc 0]
-	   (if (> cc n-2)
-	     (persistent! 
-	      (reduce (fn [v i] (conj! v (or (l-val-map i) 0)))
-		      (transient [])
-		      (range n)))
-	     (recur (conj! l-val-map [(- n (nth rev-n-values cc)) cc]) (inc cc))))))))
+	     l-val-map (find-L-map rev-n-values)]
+	 (persistent! 
+	  (reduce (fn [v i] (conj! v (or (l-val-map i) 0)))
+		  (transient [])
+		  (range n)))))))
 
 (defn find-l
   "l(i) is the largest suffix of P[i..n] which is also prefix of P.
@@ -104,45 +101,68 @@
 (defprotocol Matcher
   (match [this pattern]))
 
+(defn- binary-search
+  "Returns the searched item or if it's not in the seq its predecessor"
+  [coll value default]
+  (if (seq coll)
+    (let [res (Collections/binarySearch coll value)
+	  res (if (< res 0)
+		(- -2 res) ;;return previous item's index
+		res)	   ;;return found item's index
+	  ]
+      (get coll res default))
+    default))
+
+(defn- shift-L
+  "Returns the shift for the pattern using good
+   suffix rule due to a mismatch on position idx"
+  [L-values n idx]
+  (let [L-value (L-values (inc idx))]
+    (if (> L-value 0)
+      (- n L-value 1)
+      0)))
+
+(defn- shift-bad-char [char-idx idx bad-char]
+  (- idx (binary-search (char-idx bad-char) idx -1)))
+
+(defn- max-shift
+  "bm-index, idx, length, bad-char"
+  [{char-idx :char-idx L :L n :length} idx bad-char]
+  (max (shift-L L n idx)
+       (shift-bad-char char-idx idx bad-char)))
+
 (defn drop-indexed [pred & collections]
   (drop-while #(apply pred (drop 1 %))
 	      (apply map vector
 		     (iterate inc 0)
 		     collections)))
 
-(defn- binary-search [coll value default]
-  (when (seq coll)
-    (let [res (Collections/binarySearch coll value)
-	  res (if (< res 0)
-		(- -2 res) ;;return previous item's index
-		res)	   ;;return found item's index
-	  ]
-      (get coll res default)))) 
-
-(defrecord BMIndex [pattern char-idx L l]
+(defrecord BMIndex [pattern length char-idx L l]
   Matcher
   (match [this data]
-	 (let [n (count L)
+	 (let [n length ;;pattern length
 	       rpattern (reverse pattern)
 	       inner
-	       (fn inner [data k]
+	       (fn inner [data k];k - right position index+1
 		 (lazy-seq
 		  (let [chunk (take n data)]
 		    (when (>= (count chunk) n)
-		      (let [[i _ bad-char] (first (drop-indexed = rpattern (reverse chunk)))
+		      (let [;;get i, which is index from end, and bad char
+			    [i _ bad-char] (first (drop-indexed = rpattern (reverse chunk)))
+			    ;;compute shift
 			    shift (if (nil? i)
-				    (+ k n (- (nth l 1)))
-				    (max (binary-search (char-idx bad-char) i 0)
-					 (L (- n i 1))))]
-			(cons (and i (- k n)) 
-			      (inner (drop (dec shift) data) (+ k shift))))))))]
+				    (- n (nth l 1));;keep suffix equal to prefix
+				    (max-shift this (- n i 1) bad-char))]
+			(cons (or i (- k n))
+			      (inner (drop shift data) (+ k shift))))))))]
 	   (when (seq data)
-	     (inner data (dec (count L)))))))
+	     (inner data (count L))))))
 
 (defn bm-index [pattern]
   (let [reverse-n (find-reverse-N pattern)]
     (BMIndex.
      pattern
+     (count pattern)
      (find-char-idx pattern)
      (find-L reverse-n)
      (find-l reverse-n))))

@@ -1,5 +1,5 @@
 (ns str-match.classic-test
-  (:use [str-match.classic] :reload-all)
+  (:use [str-match.classic :as sut] :reload-all)
   (:use [clojure.test]))
 
 (deftest find-z-empty-string-or-collection
@@ -59,13 +59,13 @@
 (deftest find-L-map-all-cases
   (testing "Null cases"
     (are [x] (nil? x)
-	 (find-L-map nil)
-	 (find-L-map [])
-	 (find-L-map "")))
+	 (@#'sut/find-L-map nil)
+	 (@#'sut/find-L-map [])
+	 (@#'sut/find-L-map "")))
   (testing "Usual cases"
-    (is (= (find-L-map (find-reverse-N "cabdabdab")) {4 5, 7 2}))
-    (is (= (find-L-map (find-reverse-N "ab:abab")) {5 4}))
-    (is (= (find-L-map (find-reverse-N "dabababab")) {7 2, 5 4, 3 6}))))
+    (is (= (@#'sut/find-L-map (find-reverse-N "cabdabdab")) {4 5, 7 2}))
+    (is (= (@#'sut/find-L-map (find-reverse-N "ab:abab")) {5 4}))
+    (is (= (@#'sut/find-L-map (find-reverse-N "dabababab")) {7 2, 5 4, 3 6}))))
 
 (deftest find-L-all-cases
   (testing "Null cases"
@@ -75,7 +75,8 @@
 	 (find-L "")))
   (testing "Usual cases"
     (is (= (find-L (find-reverse-N "cabdabdab")) [0 0 0 0 5 0 0 2 0]))
-    (is (= (find-L (find-reverse-N "ab:abab")) [0 0, 0, 0 0, 5 0]))))
+    (is (= (find-L (find-reverse-N "ab:abab")) [0 0, 0, 0 0, 4 0]))
+    (is (= (find-L (find-reverse-N "dabababab")) [0 0 0 6, 0 4 0 2, 0]))))
 
 (deftest find-l-all-cases
   (testing "Null cases"
@@ -91,4 +92,40 @@
   (testing "Source is not a vector"
     (is (= (find-l (list 0 5 0 3 0 1)) [5 5 3 3 1 1]))))
 
+(deftest binary-search-all-cases
+  (testing "Null or empty"
+    (are [x] (= :non-nil x)
+	 (@#'sut/binary-search nil 'a :non-nil)
+	 (@#'sut/binary-search [] 'a :non-nil)))
+  (testing "Usual cases"
+    (is (= (@#'sut/binary-search ['a 'b 'c 'd 'e] 'a :nope) 'a))
+    (is (= (@#'sut/binary-search ['a 'b 'c 'd 'e] 'd :nope) 'd))
+    (is (= (@#'sut/binary-search ['a 'b 'd 'e] 'c :nope) 'b))
+    (is (= (@#'sut/binary-search ['b 'c 'd 'e] 'a :nope) :nope))
+    (is (= (@#'sut/binary-search ['a 'b 'c 'd 'e] 'f :nope) 'e))))
+
+(deftest shift-L-all-cases
+  (testing "Accuracy"
+    (is (= (@#'sut/shift-L [0 0 0 3 0] 5 2) 1))
+    (is (= (@#'sut/shift-L [0 0 0 5 0 0 2 0 0] 9 2) 3))
+    (is (every? #{0} (map #(@#'sut/shift-L [0 0 0 3 0] 5 %) [0 1 3])))))
+
+(deftest shift-bad-char-all-cases
+  (testing "Accuracy"
+    (is (= (@#'sut/shift-bad-char {\a [0 3 6], \b [1 4 7], \c [2 5 8]} 5 \b) 1))
+    (is (= (@#'sut/shift-bad-char {\a [0 1 2]} 0 \e) 1))
+    (is (= (@#'sut/shift-bad-char {\a [0 2] \b [1]} 1 \a) 1))
+    (is (= (@#'sut/shift-bad-char {\a [0 1 2 3]} 3 \b) 4))))
+
+;;     0 1 2 3 4 5 6 7 8
+;;    "a b c a b c a b c"
+;; :L [0 0 0 5 0 0 2 0 0],
+;; :l [6 6 6 6 3 3 3 0 0]}
+;; :char-idx {\a [0 3 6], \b [1 4 7], \c [2 5 8]},
+(deftest max-shitft-all-cases
+  (testing "Accuracy"
+    (is (= (@#'sut/max-shift (bm-index "abcabcabc") 2 \b) 3))
+    (is (= (@#'sut/max-shift (bm-index "abcabcabc") 5 \a) 6))
+    (is (= (@#'sut/max-shift {:L [0 0 0 2 0] :char-idx {\b [0]} :length 5} 2 \b) 2))
+    (is (= (@#'sut/max-shift {:L [0 0 0 2 0] :char-idx {} :length 5} 2 \b) 3))))
 #_(run-all-tests)
