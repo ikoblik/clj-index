@@ -108,7 +108,7 @@
   (testing "Accuracy"
     (is (= (@#'sut/shift-L [0 0 0 3 0] 5 2) 1))
     (is (= (@#'sut/shift-L [0 0 0 5 0 0 2 0 0] 9 2) 3))
-    (is (every? #{0} (map #(@#'sut/shift-L [0 0 0 3 0] 5 %) [0 1 3])))))
+    (is (every? #{0} (map #(@#'sut/shift-L [0 0 0 3 0] 5 %) [0 1 3 4])))))
 
 (deftest shift-bad-char-all-cases
   (testing "Accuracy"
@@ -128,4 +128,22 @@
     (is (= (@#'sut/max-shift (bm-index "abcabcabc") 5 \a) 6))
     (is (= (@#'sut/max-shift {:L [0 0 0 2 0] :char-idx {\b [0]} :length 5} 2 \b) 2))
     (is (= (@#'sut/max-shift {:L [0 0 0 2 0] :char-idx {} :length 5} 2 \b) 3))))
+
+(deftest match-shift-all-cases
+  (testing "Accuracy"
+    (is (= (@#'sut/match-shift 3 [0 0 0]) 3))
+    (is (= (@#'sut/match-shift 3 [0 1 0]) 2))
+    (is (= (@#'sut/match-shift 1 [1]) 1))))
+
+(deftest bm-match-all-cases
+  (testing "Null cases"
+    (are [x] (nil? x)
+	 (match (bm-index "a") nil)
+	 (match (bm-index "a") [])
+	 (match (bm-index "a") "")))
+  (testing "Accuracy"
+    (is (= (match (bm-index "a") "aaaa") [0 1 2 3]))
+    (is (= (match (bm-index "abc") "abc") [0]))
+    (is (= (match (bm-index "abc") "abcabcabc") [0 3 6]))
+    (is (= (match (bm-index "abc") "abc#abc#abc") [0 4 8]))))
 #_(run-all-tests)

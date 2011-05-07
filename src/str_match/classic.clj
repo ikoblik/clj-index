@@ -99,7 +99,7 @@
 		  (reverse rev-n-values)))))))
 
 (defprotocol Matcher
-  (match [this pattern]))
+  (match [this data]))
 
 (defn- binary-search
   "Returns the searched item or if it's not in the seq its predecessor"
@@ -117,7 +117,9 @@
   "Returns the shift for the pattern using good
    suffix rule due to a mismatch on position idx"
   [L-values n idx]
-  (let [L-value (L-values (inc idx))]
+  (let [L-value (if (> n (inc idx))
+		  (L-values (inc idx))
+		  0)]
     (if (> L-value 0)
       (- n L-value 1)
       0)))
@@ -130,6 +132,14 @@
   [{char-idx :char-idx L :L n :length} idx bad-char]
   (max (shift-L L n idx)
        (shift-bad-char char-idx idx bad-char)))
+
+(defn- match-shift
+  "Gives max shift after a match,
+   n - the pattern length, l the l-values"
+  [n l]
+  (if (> n 1)
+    (- n (nth l 1))
+    1))
 
 (defn drop-indexed [pred & collections]
   (drop-while #(apply pred (drop 1 %))
@@ -147,16 +157,16 @@
 		 (lazy-seq
 		  (let [chunk (take n data)]
 		    (when (>= (count chunk) n)
-		      (let [;;get i, which is index from end, and bad char
-			    [i _ bad-char] (first (drop-indexed = rpattern (reverse chunk)))
+		      (let [;;failed-on (index from the end), bad-char (the last char)
+			    [failed-on _ bad-char] (first (drop-indexed = rpattern (reverse chunk)))
 			    ;;compute shift
-			    shift (if (nil? i)
-				    (- n (nth l 1));;keep suffix equal to prefix
-				    (max-shift this (- n i 1) bad-char))]
-			(cons (or i (- k n))
+			    shift (if (nil? failed-on) ;;true means that there was a match
+				    (match-shift n l) ;;keep suffix equal to prefix
+				    (max-shift this (- n failed-on 1) bad-char))]
+			(cons (if (nil? failed-on) (- k n))
 			      (inner (drop shift data) (+ k shift))))))))]
 	   (when (seq data)
-	     (inner data (count L))))))
+	     (remove nil? (inner data (count L)))))))
 
 (defn bm-index [pattern]
   (let [reverse-n (find-reverse-N pattern)]
