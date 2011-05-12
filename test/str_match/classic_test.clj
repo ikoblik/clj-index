@@ -146,4 +146,31 @@
     (is (= (match (bm-index "abc") "abc") [0]))
     (is (= (match (bm-index "abc") "abcabcabc") [0 3 6]))
     (is (= (match (bm-index "abc") "abc#abc#abc") [0 4 8]))))
+
+;;
+;; Knuth-Morris-Pratt method
+;;
+
+(deftest find-sp*-all-cases
+  (testing "Null cases"
+    (are [x] (nil? x)
+	 (find-sp* nil)
+	 (find-sp* [])))
+  (testing "Normal cases"
+    (is (= (find-sp* [0 2 0 0]) [0 0 2 0]))
+    (is (= (find-sp* [0 0 3 0 0]) [0 0 0 0 3]))
+    (is (= (find-sp* [1]) [0]))
+    (is (= (find-sp* [0 5 0 3 0 0 0]) [0 0 0 0 0 5 0]))
+    (is (= (find-sp* [1 2 0 4 0 0 0]) [0 0 2 0 0 0 4]))))
+
+(deftest find-sp-delegates-to-sp*
+  (testing "Delegation"
+    (binding
+	[find-sp* (fn [param]
+		    (cond (= param (find-z "abcabczabc")) 'result
+			  (= param nil) 'nil-result
+			  :else nil))]
+      (is (= (find-sp "abcabczabc") 'result))
+      (is (= (find-sp []) 'nil-result)))))
+
 #_(run-all-tests)

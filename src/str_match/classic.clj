@@ -34,6 +34,17 @@
 	  :else (let [zk (+ betta (count-match (drop betta pattern) (drop betta tail)))]
 		  (recur (inc k) (conj! zs zk) k (+ k zk -1) (rest tail)))))))))
 
+;;===============================================================
+;; Matcher protocol
+;;===============================================================
+
+(defprotocol Matcher
+  (match [this data]))
+
+;;===============================================================
+;; Boyer-Moore algorithm
+;;===============================================================
+
 (defn find-char-idx
   "Builds a list-multimap of characters and their positions in the pattern"
   [pattern]
@@ -50,7 +61,9 @@
   [pattern]
   (find-z (reverse pattern)))
 
-(defn- find-L-map [rev-n-values]
+(defn- find-L-map
+  "Returns the result similar to find-L function but in map format."
+  [rev-n-values]
   (when (seq rev-n-values)
     (let [n (count rev-n-values)]
       (persistent!
@@ -97,9 +110,6 @@
 	     (map list
 		  (range (dec n) -1 -1)
 		  (reverse rev-n-values)))))))
-
-(defprotocol Matcher
-  (match [this data]))
 
 (defn- binary-search
   "Returns the searched item or if it's not in the seq its predecessor"
@@ -176,3 +186,25 @@
      (find-char-idx pattern)
      (find-L reverse-n)
      (find-l reverse-n))))
+
+;;===============================================================
+;; Knuth-Morris-Pratt algorithm
+;;===============================================================
+
+(defn find-sp*
+  "Converts Z(i) values to sp(i)."
+  [z-values]
+  (when (seq z-values)
+    (let [length (count z-values)]
+      (persistent!
+       (reduce (fn [so-far [z-value j]]
+		 (assoc! so-far (+ j z-value -1) z-value))
+	       (transient (into [] (repeat length 0)))
+	       (map list
+		    (reverse z-values)
+		    (range (dec length) 0 -1)))))))
+
+(defn find-sp
+  "Returns sp(i) values for the Knuth-Morris-Pratt method."
+  [pattern]
+  (find-sp* (find-z pattern)))
