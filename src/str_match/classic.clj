@@ -151,7 +151,11 @@
     (- n (nth l 1))
     1))
 
-(defn drop-indexed [pred & collections]
+(defn drop-indexed
+  "Applies predicate to the items of the given collections
+   until it returns false. Returns a tuple with
+   index of the last check and the values at this postion."
+  [pred & collections]
   (drop-while #(apply pred (drop 1 %))
 	      (apply map vector
 		     (iterate inc 0)
@@ -208,3 +212,28 @@
   "Returns sp(i) values for the Knuth-Morris-Pratt method."
   [pattern]
   (find-sp* (find-z pattern)))
+
+(defrecord KMP-Index [pattern length sp-values]
+  Matcher
+  (match [this data]
+	 (let [n-1 (dec length)
+	       inner
+	       (fn inner [data patt-idx data-idx]
+		 ;;always shift data, adapt pattern
+		 (lazy-seq
+		  (when (>= (count data) length)
+		    (let [[failed-on _ _] (first (drop-indexed = (drop patt-idx pattern) data))
+			  patt-shift (nth sp-values (or failed-on n-1))
+			  data-shift (if failed-on (max failed-on 1) (- length patt-shift))
+			  #_a #_(println :patt-idx patt-idx :data data :failed-on failed-on
+				     :data-shift data-shift :patt-shift patt-shift
+				     :sp-value (nth sp-values (or failed-on n-1)))]
+		      (cons (when (nil? failed-on) data-idx)
+			    (inner (drop data-shift data) patt-shift (+ data-idx data-shift)))))))]
+	   (when (seq data)
+	     (remove nil? (inner data 0 0))))))
+
+(defn kmp-index [pattern]
+  (KMP-Index. pattern
+	     (count pattern)
+	     (find-sp pattern)))

@@ -143,6 +143,7 @@
 	 (match (bm-index "a") "")))
   (testing "Accuracy"
     (is (= (match (bm-index "a") "aaaa") [0 1 2 3]))
+    (is (= (match (bm-index "aa") "aaaaaa") [0 1 2 3 4]))
     (is (= (match (bm-index "abc") "abc") [0]))
     (is (= (match (bm-index "abc") "abcabcabc") [0 3 6]))
     (is (= (match (bm-index "abc") "abc#abc#abc") [0 4 8]))))
@@ -172,5 +173,18 @@
 			  :else nil))]
       (is (= (find-sp "abcabczabc") 'result))
       (is (= (find-sp []) 'nil-result)))))
+
+(deftest kmp-match-all-cases
+  (testing "Null cases"
+    (are [x] (nil? x)
+	 (match (kmp-index "a") nil)
+	 (match (kmp-index "a") [])
+	 (match (kmp-index "a") "")))
+  (testing "Accuracy"
+    (is (= (match (kmp-index "a") "aaaa") [0 1 2 3]))
+    (is (= (match (kmp-index "aa") "aaaaaa") [0 1 2 3 4]))
+    (is (= (match (kmp-index "abc") "abc") [0]))
+    (is (= (match (kmp-index "abc") "abcabcabc") [0 3 6]))
+    (is (= (match (kmp-index "abc") "abc#abc#abc") [0 4 8]))))
 
 #_(run-all-tests)
