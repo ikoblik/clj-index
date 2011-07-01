@@ -1,5 +1,5 @@
 (ns str-match.classic-test
-  (:use [str-match.classic :as sut] :reload-all)
+  (:use [str-match.core :as sut] :reload-all)
   (:use [clojure.test]))
 
 (deftest find-z-empty-string-or-collection
