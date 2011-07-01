@@ -1,5 +1,5 @@
-(ns str-match.classic
-  (:import [java.util Collections]))
+(in-ns 'str-match.classic)
+(import '[java.util Collections])
 
 (defn count-match
   "counts number of matching items from the beginning"
