@@ -1,3 +1,4 @@
 (ns str-match.core)
 
-(load "classic")
+(load "boyer_moore")
+(load "knuth_morris_pratt")
