@@ -1,4 +1,4 @@
-(in-ns 'str-match.core)
+(in-ns 'clj-index.core)
 (import '[java.util Collections])
 
 (defn count-match

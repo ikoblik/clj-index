@@ -1,5 +1,5 @@
-(ns str-match.aho-corasic-test
-  (:use [str-match.core :as sut] :reload-all)
+(ns clj-index.aho-corasic-test
+  (:use [clj-index.core :as sut] :reload-all)
   (:use [clojure.test]))
 
 ;;===============================================================

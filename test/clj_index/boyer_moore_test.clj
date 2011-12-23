@@ -1,5 +1,5 @@
-(ns str-match.boyer-moore-test
-  (:use [str-match.core :as sut] :reload-all)
+(ns clj-index.boyer-moore-test
+  (:use [clj-index.core :as sut] :reload-all)
   (:use [clojure.test]))
 
 ;;===============================================================

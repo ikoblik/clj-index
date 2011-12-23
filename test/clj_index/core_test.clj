@@ -1,5 +1,5 @@
-(ns str-match.core-test
-  (:use [str-match.core] :reload-all)
+(ns clj-index.core-test
+  (:use [clj-index.core] :reload-all)
   (:use [clojure.test]))
 
 #_(deftest replace-me ;; FIXME: write

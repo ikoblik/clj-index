@@ -1,5 +1,5 @@
-(ns str-match.knuth-morris-pratt-test
-  (:use [str-match.core :as sut] :reload-all)
+(ns clj-index.knuth-morris-pratt-test
+  (:use [clj-index.core :as sut] :reload-all)
   (:use [clojure.test]))
 
 ;;

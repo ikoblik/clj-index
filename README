@@ -1,15 +1,42 @@
-# str-match
+# clj-index
 
-FIXME: write description
+Indexing and matching library written in Clojure. Allows indexing 
+and matching of sequences of any type.
 
 ## Usage
 
-FIXME: write
+There are currently only two ways to index a string.
+1. Boyer-Moore
+2. Knuth-Morris-Pratt
+
+To index a string use either bm-index or kmp-index. This will create
+an instance of Matcher protocol that supports method match.
+
+(use 'clj-index.core)
+(def indexed-word (bm-index "word"))
+(println (match indexed-word "This string contains word word"))
+user=> (21 26)
+
+(21 26) are indexes of the first characters of the word's occurances 
+in the string. This search is lazy, so it can be potentially used 
+on indefinite sequences.
+
+Indexing and search is not constrained to strings. Example of indexing
+array of integers and searching in an indefinite sequence.
+
+(def five-to-seven (bm-index [5 6 7]))
+(first (match five-to-seven (iterate inc 0)))
+user=> 5
 
 ## Installation
 
-FIXME: write
+Download the sources, and run command:
+lein jar
+
+If you don't have lein installed please install it from here:
+https://github.com/technomancy/leiningen
 
 ## License
 
-FIXME: write
+Same as Clojure license: Eclipse Public License 1.0.
+http://opensource.org/licenses/eclipse-1.0.php

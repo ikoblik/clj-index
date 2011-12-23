@@ -1,4 +1,4 @@
-(ns str-match.core)
+(ns clj-index.core)
 
 (load "boyer_moore")
 (load "knuth_morris_pratt")

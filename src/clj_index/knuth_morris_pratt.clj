@@ -1,4 +1,4 @@
-(in-ns 'str-match.core)
+(in-ns 'clj-index.core)
 
 ;;===============================================================
 ;; Knuth-Morris-Pratt algorithm
