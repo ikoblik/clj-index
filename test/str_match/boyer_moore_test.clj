@@ -2,6 +2,10 @@
   (:use [str-match.core :as sut] :reload-all)
   (:use [clojure.test]))
 
+;;===============================================================
+;; Z index and Boyer-Moore unit tests.
+;;===============================================================
+
 (deftest find-z-empty-string-or-collection
   (is (= (find-z "") nil))
   (is (= (find-z nil) nil))
