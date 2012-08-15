@@ -24,7 +24,7 @@ public class Box implements IDeref {
     }
 
     @Override
-    public Object deref() throws Exception {
+    public Object deref() {
         return value;
     }
 
