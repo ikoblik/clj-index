@@ -57,7 +57,7 @@
 	 (find-reverse-N [])
 	 (find-reverse-N "")))
   (testing "As z-value of reverse"
-    (is (= (binding [find-z (fn [s] (when (= s [2 1]) :my-result))]
+    (is (= (with-redefs [find-z (fn [s] (when (= s [2 1]) :my-result))]
 	     (find-reverse-N [1 2])) :my-result))))
 
 (deftest find-L-map-all-cases

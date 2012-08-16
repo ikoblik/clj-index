@@ -20,7 +20,7 @@
 
 (deftest find-sp-delegates-to-sp*
   (testing "Delegation"
-    (binding
+    (with-redefs
 	[find-sp* (fn [param]
 		    (cond (= param (find-z "abcabczabc")) 'result
 			  (= param nil) 'nil-result
