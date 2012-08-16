@@ -43,6 +43,30 @@
     (are [b] (nil? (@#'sut/get-skip-link b))
          b1
          b2)
-    (do (@#'sut/set-skip-link! b1 b2 1)
-        (is (= [b2 1]
-               (@#'sut/get-skip-link b1))))))
+    (do (@#'sut/set-skip-link! b1 b2 123)
+        (are [skip-node length node]
+             (and (= skip-node (@#'sut/skip-node node))
+                  (= length (@#'sut/skip-length node)))
+             b2 123 (@#'sut/get-skip-link b1)))))
+
+(deftest skip-link-seq
+  (let [b1 (box)
+        b2 (box)
+        b3 (box)
+        _ (do (@#'sut/set-skip-link! b1 b2 123)
+              (@#'sut/set-skip-link! b2 b3 15))
+        b1-seq (doall (@#'sut/skip-seq b1))
+        b2-seq (doall (@#'sut/skip-seq b2))]
+    (is (= 2 (count b1-seq)))
+    (is (= 1 (count b2-seq)))
+    (are [skip-node length node]
+         (and (= skip-node (@#'sut/skip-node node))
+              (= length (@#'sut/skip-length node)))
+         b2 123 (first b1-seq)
+         b3 15 (second b1-seq)
+         b3 15 (first b2-seq))))
+
+(deftest find-skip-link-test
+  (let [tree (doto (box)
+               (sut/add-word! "abc")
+               (sut/add-word! "abc"))]))

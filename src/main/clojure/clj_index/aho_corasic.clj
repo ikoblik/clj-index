@@ -57,18 +57,41 @@
        (recur-add node word)))
     node))
 
-(defn get-skip-link [node]
+(defn- get-skip-link [node]
   (get @node :skip))
 
-(defn set-skip-link!
+(defn- set-skip-link!
   "Sets skip link for the given node. Link also specifies
    linked node depth."
   [node skip-node length]
   (set-value! node
               (assoc @node :skip [skip-node length])))
 
+(defn- skip-node [skip-link]
+  (first skip-link))
+
+(defn- skip-length [skip-link]
+  (second skip-link))
+
+(defn- skip-seq [node]
+  (when-let [skip-link (get-skip-link node)]
+    (cons skip-link
+          (lazy-seq (skip-seq (skip-node skip-link))))))
+
+(defn- find-skip-link
+  "Follows parent's skip link searching for
+   a sequence that would match longest proper suffix
+   of the sequence formed by parent-node + next-key"
+  [parent-node next-key]
+  (let [sseq (skip-seq parent-node)]
+    (first
+     (filter (fn [link]
+               (get-child (skip-node link) next-key))
+             sseq))))
+
 (defn add-skip-links!
   "Walks the tree in breadth first fashion and adds skip link
    to its nodes."
   [root]
+  (letfn [])
   )
