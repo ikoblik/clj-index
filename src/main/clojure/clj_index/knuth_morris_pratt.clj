@@ -30,11 +30,14 @@
 	       (fn inner [data patt-idx data-idx]
 		 ;;always shift data, adapt pattern
 		 (lazy-seq
-		  (when (>= (count data) length)
+		  (when (seq data)
 		    (let [[failed-on _ _] (first (drop-indexed = (drop patt-idx pattern) data))
 			  patt-shift (nth sp-values (or failed-on n-1))
 			  data-shift (if failed-on (max failed-on 1) (- length patt-shift))]
-		      (cons (when (nil? failed-on) data-idx)
+		      (cons (when (and (nil? failed-on)
+                                       ;;make sure that there's enough remaining data for match
+                                       (= length (count (take length data))))
+                              data-idx)
 			    (inner (drop data-shift data) patt-shift (+ data-idx data-shift)))))))]
 	   (when (seq data)
 	     (remove nil? (inner data 0 0))))))
