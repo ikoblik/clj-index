@@ -58,40 +58,88 @@
     node))
 
 (defn- get-skip-link [node]
-  (get @node :skip))
+  (when node
+    (get @node :skip)))
+
+;;------------ Skip link -----------
+
+(defprotocol SkipLink
+  (skip-node [this])
+  (prefix-length [this]))
+
+(extend-type nil
+  SkipLink
+  (skip-node [_] nil)
+  (prefix-length [_] 0))
+
+(defrecord RecordSkipLink [node prefix-length]
+  SkipLink
+  (skip-node [_]
+    node)
+  (prefix-length [_]
+    prefix-length))
+
+(defn skip-link [node prefix-length]
+  (RecordSkipLink. node prefix-length))
 
 (defn- set-skip-link!
   "Sets skip link for the given node. Link also specifies
    linked node depth."
   [node skip-node length]
   (set-value! node
-              (assoc @node :skip [skip-node length])))
+              (assoc @node :skip (skip-link skip-node length))))
 
-(defn- skip-node [skip-link]
-  (first skip-link))
-
-(defn- skip-length [skip-link]
-  (second skip-link))
-
-(defn- skip-seq [node]
+(defn- skip-seq
+  "Builds sequence of outgoing skip links starting from the node."
+  [node]
   (when-let [skip-link (get-skip-link node)]
     (cons skip-link
           (lazy-seq (skip-seq (skip-node skip-link))))))
 
 (defn- find-skip-link
-  "Follows parent's skip link searching for
-   a sequence that would match longest proper suffix
-   of the sequence formed by parent-node + next-key"
-  [parent-node next-key]
-  (let [sseq (skip-seq parent-node)]
-    (first
-     (filter (fn [link]
-               (get-child (skip-node link) next-key))
-             sseq))))
+  "Follows parent's skip link chain searching for
+   a node with a child with next-key.
+   Returns the link or nil."
+  [root parent-node next-key]
+  (let [sseq (skip-seq parent-node)
+        link (first
+              (filter (fn [link]
+                        (get-child (skip-node link) next-key))
+                      sseq))]
+    (if link
+      link
+      (when-let [root-child (get-child root next-key)]
+        (skip-link root 0)))))
+
+
+(defn match-prefix
+  "Checks if the prefix exists in the tree and returns
+   node corresponding to the last element in the prefix."
+  [node prefix]
+  (reduce (fn [node key]
+            (when node ;TODO: should stop when node is null
+              (get-child node key)))
+          node prefix))
 
 (defn add-skip-links!
   "Walks the tree in breadth first fashion and adds skip link
    to its nodes."
   [root]
-  (letfn [])
-  )
+  ;;BF - needs queue
+  (let [queue (java.util.LinkedList.) ;;mutable queue
+        enqueue-children (fn [node]
+                           (doseq [child (get-children node)]
+                             (.add queue [node child])))]
+    ;;Start from second level children as children of root don't have
+    ;;skip links.
+    (doseq [[_ child] (get-children root)]
+      (enqueue-children child))
+    (when-not (.isEmpty queue)
+      (loop [[parent [key child]] (.removeFirst queue)]
+        (when-let [link (find-skip-link root parent key)]
+          (set-skip-link! child
+                          (get-child (skip-node link) key)
+                          (inc (prefix-length link))))
+        (enqueue-children child)
+        (when-not (.isEmpty queue)
+          (recur (.removeFirst queue)))))))
