@@ -44,6 +44,19 @@
 (defn- word? [node]
   (get @node :stop))
 
+(defn- get-max-length
+  "Returns length of the longest index sequence."
+  [root]
+  (:max-length @root 0))
+
+(defn- set-max-length!
+  "Must be called on root node with length of added word,
+   it's needed to keep track of longest sequence in the dictionary."
+  [root length]
+  (if (< (get-max-length root) length)
+    (set-value! root
+                (assoc @root :max-length length))))
+
 ;;TODO Use Flyweight pattern. Write a function that memoizes
 ;;every item from (seq word)?
 (defn add-word! [node word]
@@ -55,7 +68,7 @@
                 node))]
       (mark-word!
        (recur-add node word)))
-    node))
+    (set-max-length! node (count word))))
 
 (defn- get-skip-link [node]
   (when node
@@ -170,3 +183,8 @@
         (when-not (.isEmpty queue)
           (recur (.removeFirst queue)))))))
 
+(defrecord ACIndex [tree]
+  Matcher
+  (match [this data]
+    (let [context-length (get-max-length tree) ;will need it to report matches
+          ])))

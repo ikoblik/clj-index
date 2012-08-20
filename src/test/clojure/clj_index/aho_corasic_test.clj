@@ -66,6 +66,20 @@
          b3 15 (second b1-seq)
          b3 15 (first b2-seq))))
 
+(deftest add-word-test
+  (testing "Max length is mantained"
+    (are [added-words max-length]
+         (= max-length
+            (let [tree (box)]
+              (doseq [word added-words]
+                (@#'sut/add-word! tree word))
+              (@#'sut/get-max-length tree)))
+         [] 0
+         ["a"] 1
+         ["ab" "a"] 2
+         ["bcd" "afg" "fa" "dc"] 3
+         ["a" "bc" "dfe"] 3)))
+
 (deftest match-prefix-test
   (let [tree (doto (box)
                (@#'sut/add-word! "abcde")
