@@ -45,7 +45,7 @@
          b2)
     (do (@#'sut/set-skip-link! b1 b2 123)
         (are [skip-node length node]
-             (and (= skip-node (@#'sut/skip-node node))
+             (and (= skip-node (@#'sut/linked-node node))
                   (= length (@#'sut/prefix-length node)))
              b2 123 (@#'sut/get-skip-link b1)))))
 
@@ -60,7 +60,7 @@
     (is (= 2 (count b1-seq)))
     (is (= 1 (count b2-seq)))
     (are [skip-node length node]
-         (and (= skip-node (@#'sut/skip-node node))
+         (and (= skip-node (@#'sut/linked-node node))
               (= length (@#'sut/prefix-length node)))
          b2 123 (first b1-seq)
          b3 15 (second b1-seq)
@@ -115,14 +115,14 @@
               a node marked as 'to' or nil."
         (are [from key to]
              (= (when to (sut/match-prefix tree to))
-                (@#'sut/skip-node
+                (@#'sut/linked-node
                  (@#'sut/find-skip-link tree (sut/match-prefix tree from) key)))
              "abcd" \g "cd"
              "bcd" \h "d"
              "cd" \f nil))
     (testing "Root is a valid skip link."
       (is (= tree
-             (@#'sut/skip-node
+             (@#'sut/linked-node
               (@#'sut/find-skip-link tree
                                      (sut/match-prefix tree "cd")
                                      \a)))))))
@@ -136,21 +136,30 @@
 ;;      d-h
 ;;      |
 ;;      d-h-a-b-c
-(deftest add-skip-links-test
-  (let [tree (get-tree "abcde" "bcdf" "cdg" "dh" "dhabc")
-        _ (sut/add-skip-links! tree)]
+(deftest add-links-test
+  (let [tree (get-tree "abcde" "bcdf" "cdg" "dh" "dhabc" "cd")
+        _ (sut/add-links! tree)]
     (testing "Node in skip-link must equal expected node"
       (are [from-node expected prefix-length]
            (let [link (@#'sut/get-skip-link
                        (sut/match-prefix tree from-node))]
              (= (when expected (sut/match-prefix tree expected))
-                (@#'sut/skip-node link))
+                (@#'sut/linked-node link))
              (= prefix-length (@#'sut/prefix-length link)))
            "dha" "a" 1
            "dhab" "ab" 2
            "dhabc" "abc" 3
            "bc" "c" 1
            "dh" nil 0
-           "abcd" "bcd" 3))))
+           "abcd" "bcd" 3))
+    (testing "Node in output link must equal expected node"
+      (are [from-node expected prefix-length]
+           (let [link (@#'sut/get-output-link
+                       (sut/match-prefix tree from-node))]
+             (= (when expected (sut/match-prefix tree expected))
+                (@#'sut/linked-node link))
+             (= prefix-length (@#'sut/prefix-length link)))
+           "abcd" "cd" 2
+           "dh" nil 0))))
 
 ;;TODO: check invocations with null arguments

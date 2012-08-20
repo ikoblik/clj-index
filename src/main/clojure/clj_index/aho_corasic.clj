@@ -61,40 +61,50 @@
   (when node
     (get @node :skip)))
 
-;;------------ Skip link -----------
+(defn- get-output-link [node]
+  (when node
+    (get @node :output)))
 
-(defprotocol SkipLink
-  (skip-node [this])
+;;------------ Link -----------
+
+(defprotocol Link
+  (linked-node [this])
   (prefix-length [this]))
 
 (extend-type nil
-  SkipLink
-  (skip-node [_] nil)
+  Link
+  (linked-node [_] nil)
   (prefix-length [_] 0))
 
-(defrecord RecordSkipLink [node prefix-length]
-  SkipLink
-  (skip-node [_]
+(defrecord RecordLink [node prefix-length]
+  Link
+  (linked-node [_]
     node)
   (prefix-length [_]
     prefix-length))
 
-(defn skip-link [node prefix-length]
-  (RecordSkipLink. node prefix-length))
+(defn mk-link [node prefix-length]
+  (->RecordLink node prefix-length))
 
 (defn- set-skip-link!
   "Sets skip link for the given node. Link also specifies
    linked node depth."
   [node skip-node length]
   (set-value! node
-              (assoc @node :skip (skip-link skip-node length))))
+              (assoc @node :skip (mk-link skip-node length))))
+
+(defn- set-output-link!
+  "Sets link to a node marked as final."
+  [node output-node length]
+  (set-value! node
+              (assoc @node :output (mk-link output-node length))))
 
 (defn- skip-seq
   "Builds sequence of outgoing skip links starting from the node."
   [node]
   (when-let [skip-link (get-skip-link node)]
     (cons skip-link
-          (lazy-seq (skip-seq (skip-node skip-link))))))
+          (lazy-seq (skip-seq (linked-node skip-link))))))
 
 (defn- find-skip-link
   "Follows parent's skip link chain searching for
@@ -104,12 +114,12 @@
   (let [sseq (skip-seq parent-node)
         link (first
               (filter (fn [link]
-                        (get-child (skip-node link) next-key))
+                        (get-child (linked-node link) next-key))
                       sseq))]
     (if link
       link
       (when-let [root-child (get-child root next-key)]
-        (skip-link root 0)))))
+        (mk-link root 0)))))
 
 
 (defn match-prefix
@@ -121,7 +131,7 @@
               (get-child node key)))
           node prefix))
 
-(defn add-skip-links!
+(defn add-links!
   "Walks the tree in breadth first fashion and adds skip link
    to its nodes."
   [root]
@@ -137,9 +147,26 @@
     (when-not (.isEmpty queue)
       (loop [[parent [key child]] (.removeFirst queue)]
         (when-let [link (find-skip-link root parent key)]
-          (set-skip-link! child
-                          (get-child (skip-node link) key)
-                          (inc (prefix-length link))))
+          (let [link-child (get-child (linked-node link) key)
+                linked-length (inc (prefix-length link))]
+
+            ;;Skip link
+            (set-skip-link! child
+                            link-child
+                            linked-length)
+
+            ;;Output link
+            (cond
+             ;;Linked node is a stop node
+             (word? link-child) (set-output-link!
+                                 child link-child linked-length)
+             ;;Linked node has an output link
+             (get-output-link link-child) (let [output-link (get-output-link link-child)]
+                                            (set-output-link!
+                                             child
+                                             (linked-node output-link)
+                                             (prefix-length (get-output-link link-child)))))))
         (enqueue-children child)
         (when-not (.isEmpty queue)
           (recur (.removeFirst queue)))))))
+
