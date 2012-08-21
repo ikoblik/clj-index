@@ -183,8 +183,26 @@
         (when-not (.isEmpty queue)
           (recur (.removeFirst queue)))))))
 
-(defrecord ACIndex [tree]
+(defrecord ACIndex [tree max-length]
   Matcher
   (match [this data]
     (let [context-length (get-max-length tree) ;will need it to report matches
-          ])))
+          inner (fn inner [data ;moving reference to current item
+                           data-idx ;index of the current item
+                           node ;moving reference to current node in index trie
+                           root-ref     ;reference to the item that would be child of the root in index trie
+                                        ;in the sequence [root-idx, data-idx]
+                           root-idx ;index of the first item in history within original data
+                           ]
+                  (when (seq data)
+                    (let [next-item (first data)
+                          ;;A. Find appropriate node for next-item
+                          child (or (get-child node next-item)
+                                    ;;todo: update root-idx and root-ref
+                                    (linked-node (find-skip-link tree node next-item)))
+                          ;;B. Check if there's a match
+                          ;;1. stop node itself
+                          ;;2. has outgoing link
+                          ;;3. recurcively outgoing link has another outgoing link
+                          ])))]
+      )))
