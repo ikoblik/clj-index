@@ -105,6 +105,10 @@
       (sut/add-word! tree word))
     tree))
 
+(defn get-linked-tree [& words]
+  (doto (apply get-tree words)
+    (sut/add-links!)))
+
 (deftest find-skip-link-test
   ;;a-b-c-d-e
   ;;      |
@@ -151,8 +155,7 @@
 ;;      |
 ;;      d-h-a-b-c
 (deftest add-links-test
-  (let [tree (get-tree "abcde" "bcdf" "cdg" "dh" "dhabc" "cd")
-        _ (sut/add-links! tree)]
+  (let [tree (get-linked-tree "abcde" "bcdf" "cdg" "dh" "dhabc" "cd")]
     (testing "Node in skip-link must equal expected node"
       (are [from-node expected prefix-length]
            (let [link (@#'sut/get-skip-link
@@ -177,3 +180,23 @@
            "dh" nil 0))))
 
 ;;TODO: check invocations with null arguments
+
+(deftest match-seq-test
+  (testing "Simple non-chained match"
+      (let [tree (get-linked-tree "cattag" "catt")]
+        (is (= [[0 3]] (@#'sut/match-seq (sut/match-prefix tree "catt")
+                                         3)))
+        (is (empty? (@#'sut/match-seq (sut/match-prefix tree "cat")
+                                      2)))))
+  (testing "Single chain of output links"
+    (let [tree (get-linked-tree "cattag" "catt" "att" "tt" "t" "attag")]
+      (is (= [[0 2] [1 2] [2 2]] (@#'sut/match-seq (sut/match-prefix tree "att")
+                                                   2)))
+      (is (= [[0 3] [1 3] [2 3] [3 3]] (@#'sut/match-seq (sut/match-prefix tree "catt")
+                                                         3)))
+      (is (= [[0 4]] (@#'sut/match-seq (sut/match-prefix tree "attag")
+                                       4)))))
+  (testing "Chain that starts with no match"
+    (let [tree (get-linked-tree "cattag" "att" "tt" "t" "attag")]
+      (is (= [[1 3] [2 3] [3 3]] (@#'sut/match-seq (sut/match-prefix tree "catt")
+                                                   3))))))

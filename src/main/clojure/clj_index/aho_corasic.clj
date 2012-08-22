@@ -9,15 +9,15 @@
 ;;TODO: Storage to children that autopromotes itself to
 ;;hash map as it grows
 
-(defn- get-child
-  "Returns mutable child object for the given key, or null."
-  [node key]
-  (get-in @node [:children key]))
-
 (defn- get-children
   "Returns key/value storage of all the node's children"
   [node]
   (get @node :children))
+
+(defn- get-child
+  "Returns mutable child object for the given key, or null."
+  [node key]
+  (get (get-children node) key))
 
 (defn- make-child
   "Creates mutable child object"
@@ -183,6 +183,21 @@
         (when-not (.isEmpty queue)
           (recur (.removeFirst queue)))))))
 
+(defn- match-seq* [link index-from-root]
+  (when link
+    (lazy-seq
+     (let [output-node (linked-node link)
+           match-length (prefix-length link)]
+       (cons [(- index-from-root match-length -1) index-from-root]
+             (match-seq* (get-output-link output-node) index-from-root))))))
+
+(defn- match-seq [node index-from-root]
+  (doall
+  (if (word? node)
+    (cons [0 index-from-root]
+          (match-seq* (get-output-link node) index-from-root))
+    (match-seq* (get-output-link node) index-from-root))))
+
 (defrecord ACIndex [tree max-length]
   Matcher
   (match [this data]
@@ -190,19 +205,21 @@
           inner (fn inner [data ;moving reference to current item
                            data-idx ;index of the current item
                            node ;moving reference to current node in index trie
-                           root-ref     ;reference to the item that would be child of the root in index trie
+                           root-ref     ;reference to the data item that would be child of the root in index trie
                                         ;in the sequence [root-idx, data-idx]
                            root-idx ;index of the first item in history within original data
                            ]
                   (when (seq data)
                     (let [next-item (first data)
                           ;;A. Find appropriate node for next-item
-                          child (or (get-child node next-item)
-                                    ;;todo: update root-idx and root-ref
-                                    (linked-node (find-skip-link tree node next-item)))
-                          ;;B. Check if there's a match
-                          ;;1. stop node itself
-                          ;;2. has outgoing link
-                          ;;3. recurcively outgoing link has another outgoing link
-                          ])))]
+                          child (get-child node next-item)]
+                      (if child
+                        ;;use child
+                        (linked-node (find-skip-link tree node next-item));;use this as child, update root
+                        )
+                      ;;B. Check if there's a match
+                      ;;1. stop node itself
+                      ;;2. has outgoing link
+                      ;;3. recursively outgoing link has another outgoing link
+                      )))]
       )))
