@@ -112,12 +112,20 @@
   (set-value! node
               (assoc @node :output (mk-link output-node length))))
 
+(defn- link-seq
+  "Builds sequence out of linked nodes, where link is obtain by calling
+   (get-child-fn node)."
+  [get-child-fn node]
+  (letfn [(inner [node]
+            (when-let [link (get-child-fn node)]
+              (cons link
+                    (lazy-seq (inner (linked-node link))))))]
+    (inner node)))
+
 (defn- skip-seq
   "Builds sequence of outgoing skip links starting from the node."
   [node]
-  (when-let [skip-link (get-skip-link node)]
-    (cons skip-link
-          (lazy-seq (skip-seq (linked-node skip-link))))))
+  (link-seq get-skip-link node))
 
 (defn- find-skip-link
   "Follows parent's skip link chain searching for
@@ -183,20 +191,24 @@
         (when-not (.isEmpty queue)
           (recur (.removeFirst queue)))))))
 
-(defn- match-seq* [link index-from-root]
-  (when link
-    (lazy-seq
-     (let [output-node (linked-node link)
-           match-length (prefix-length link)]
-       (cons [(- index-from-root match-length -1) index-from-root]
-             (match-seq* (get-output-link output-node) index-from-root))))))
+(defn- output-seq [node]
+  (link-seq get-output-link node))
 
-(defn- match-seq [node index-from-root]
-  (doall
+(defn- match-seq*
+  "Returns sequence of matches following output links from the node."
+  [link index-from-root]
+  (map (fn [link]
+         (let [match-length (prefix-length link)]
+           [(- index-from-root match-length -1) index-from-root]))
+       (output-seq link)))
+
+(defn- match-seq
+  "Returns all possible matches at the given node."
+  [node index-from-root]
   (if (word? node)
     (cons [0 index-from-root]
-          (match-seq* (get-output-link node) index-from-root))
-    (match-seq* (get-output-link node) index-from-root))))
+          (match-seq* node index-from-root))
+    (match-seq* node index-from-root)))
 
 (defrecord ACIndex [tree max-length]
   Matcher
