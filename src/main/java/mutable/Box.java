@@ -44,6 +44,9 @@ public class Box implements IDeref {
     }
 
     public boolean equals(Object other) {
+	if (null == other) {
+	    return false;
+	}
         if (other == this) {
             return true;
         }
