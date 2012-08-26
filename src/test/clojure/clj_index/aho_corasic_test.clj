@@ -143,7 +143,12 @@
              (@#'sut/linked-node
               (@#'sut/find-skip-link tree
                                      (sut/match-prefix tree "cd")
-                                     \a)))))))
+                                     \a)))))
+    (testing "No skip link to non-matching node that has no match at root"
+      (is (nil?
+           (@#'sut/find-skip-link tree
+                                  (sut/match-prefix tree "cd")
+                                  \f))))))
 
 ;;a-b-c-d-e
 ;;      |
@@ -155,33 +160,40 @@
 ;;      |
 ;;      d-h-a-b-c
 (deftest add-links-test
-  (let [tree (get-linked-tree "abcde" "bcdf" "cdg" "dh" "dhabc" "cd")]
     (testing "Node in skip-link must equal expected node"
-      (are [from-node expected prefix-length]
-           (let [link (@#'sut/get-skip-link
-                       (sut/match-prefix tree from-node))]
-             (= (when expected (sut/match-prefix tree expected))
-                (@#'sut/linked-node link))
-             (= prefix-length (@#'sut/prefix-length link)))
-           "dha" "a" 1
-           "dhab" "ab" 2
-           "dhabc" "abc" 3
-           "bc" "c" 1
-           "dh" nil 0
-           "abcd" "bcd" 3))
+      (let [tree (get-linked-tree "abcde" "bcdf" "cdg" "dh" "dhabc" "cd" "aaa")]
+        (are [from-node expected prefix-length]
+             (let [link (@#'sut/get-skip-link
+                         (sut/match-prefix tree from-node))]
+               (= (when expected (sut/match-prefix tree expected))
+                  (@#'sut/linked-node link))
+               (= prefix-length (@#'sut/prefix-length link)))
+             "dha" "a" 1
+             "dhab" "ab" 2
+             "dhabc" "abc" 3
+             "bc" "c" 1
+             "dh" nil 0
+             "abcd" "bcd" 3
+             "aa" "a" 1
+             "aaa" "aa" 2
+             )))
     (testing "Node in output link must equal expected node"
-      (are [from-node expected prefix-length]
-           (let [link (@#'sut/get-output-link
-                       (sut/match-prefix tree from-node))]
-             (= (when expected (sut/match-prefix tree expected))
-                (@#'sut/linked-node link))
-             (= prefix-length (@#'sut/prefix-length link)))
-           "abcd" "cd" 2
-           "dh" nil 0))))
+      (let [tree (get-linked-tree "abcde" "bcdf" "cdg" "dh" "dhabc" "cd" "aaa" "aa" "aaaa")]
+        (are [from-node expected prefix-length]
+             (let [link (@#'sut/get-output-link
+                         (sut/match-prefix tree from-node))
+                   expected-node (when expected (sut/match-prefix tree expected))
+                   linked-node (@#'sut/linked-node link)
+                   linked-length (@#'sut/prefix-length link)]
+               (= expected-node linked-node)
+               (= prefix-length linked-length))
+             "abcd" "cd" 2
+             "dh" nil 0
+             "aaa" "aa" 2
+             "aaaa" "aaa" 3
+             ))))
 
 ;;TODO: check invocations with null arguments
-
-
 
 (deftest match-seq-test
   (testing "Simple non-chained match"
@@ -202,3 +214,9 @@
     (let [tree (get-linked-tree "cattag" "att" "tt" "t" "attag")]
       (is (= [[1 3] [2 3] [3 3]] (@#'sut/match-seq (sut/match-prefix tree "catt")
                                                    3))))))
+
+(deftest ac-index-match-test
+  (is (= [[0 0] [1 1] [2 2] [3 3]] (match (sut/ac-index ["a"])
+                                          "aaaa")))
+  (is (= [[0 3] [2 3] [5 6] [7 10] [13 16]] (match (sut/ac-index ["this" "is" "test"])
+                           "this istest, test"))))

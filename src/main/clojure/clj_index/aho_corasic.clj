@@ -12,7 +12,7 @@
 (defn- get-children
   "Returns key/value storage of all the node's children"
   [node]
-  (get @node :children))
+  (get (get-value node) :children))
 
 (defn- get-child
   "Returns mutable child object for the given key, or null."
@@ -33,21 +33,21 @@
       child
       (let [child (make-child)]
         (set-value! node
-                        (assoc-in @node [:children key] child))
+                    (assoc-in (get-value node) [:children key] child))
         child))))
 
 (defn- mark-word!
   "Marks given node as an ending of a word"
   [node]
-  (set-value! node (assoc @node :stop true)))
+  (set-value! node (assoc (get-value node) :stop true)))
 
 (defn- word? [node]
-  (get @node :stop))
+  (get (get-value node) :stop))
 
 (defn- get-max-length
   "Returns length of the longest index sequence."
   [root]
-  (:max-length @root 0))
+  (:max-length (get-value root) 0))
 
 (defn- set-max-length!
   "Must be called on root node with length of added word,
@@ -55,7 +55,7 @@
   [root length]
   (if (< (get-max-length root) length)
     (set-value! root
-                (assoc @root :max-length length))))
+                (assoc (get-value root) :max-length length))))
 
 ;;TODO Use Flyweight pattern. Write a function that memoizes
 ;;every item from (seq word)?
@@ -71,12 +71,11 @@
     (set-max-length! node (count word))))
 
 (defn- get-skip-link [node]
-  (when node
-    (get @node :skip)))
+  (get (get-value node) :skip))
 
 (defn- get-output-link [node]
   (when node
-    (get @node :output)))
+    (get (get-value node) :output)))
 
 ;;------------ Link -----------
 
@@ -89,12 +88,15 @@
   (linked-node [_] nil)
   (prefix-length [_] 0))
 
-(defrecord RecordLink [node prefix-length]
+(deftype RecordLink [node prefix-length]
   Link
   (linked-node [_]
     node)
   (prefix-length [_]
-    prefix-length))
+    prefix-length)
+  Object
+  (toString [this]
+    (str "{length:" prefix-length "}")))
 
 (defn mk-link [node prefix-length]
   (->RecordLink node prefix-length))
@@ -104,13 +106,13 @@
    linked node depth."
   [node skip-node length]
   (set-value! node
-              (assoc @node :skip (mk-link skip-node length))))
+              (assoc (get-value node) :skip (mk-link skip-node length))))
 
 (defn- set-output-link!
   "Sets link to a node marked as final."
   [node output-node length]
   (set-value! node
-              (assoc @node :output (mk-link output-node length))))
+              (assoc (get-value node) :output (mk-link output-node length))))
 
 (defn- link-seq
   "Builds sequence out of linked nodes, where link is obtain by calling
@@ -210,6 +212,17 @@
           (match-seq* node index-from-root))
     (match-seq* node index-from-root)))
 
+(defn- follow-skip-link
+  "For the given key returns link to a node reachable
+   from the given node's skip links or from root."
+  [root node key]
+  (let [found-link
+        (find-skip-link root node key)]
+    (if found-link ;;non nil only if there path with key from linked node
+      (mk-link (get-child (linked-node found-link) key)
+               (inc (prefix-length found-link)))
+      (mk-link root 0))))
+
 (defrecord ACIndex [tree max-length]
   Matcher
   (match [this data]
@@ -217,21 +230,47 @@
           inner (fn inner [data ;moving reference to current item
                            data-idx ;index of the current item
                            node ;moving reference to current node in index trie
-                           root-ref     ;reference to the data item that would be child of the root in index trie
-                                        ;in the sequence [root-idx, data-idx]
+                           root     ;reference to the data item that would be child of the
+                                        ;root in index trie in the sequence [root-idx, data-idx]
                            root-idx ;index of the first item in history within original data
                            ]
                   (when (seq data)
                     (let [next-item (first data)
                           ;;A. Find appropriate node for next-item
-                          child (get-child node next-item)]
-                      (if child
-                        ;;use child
-                        (linked-node (find-skip-link tree node next-item));;use this as child, update root
-                        )
-                      ;;B. Check if there's a match
-                      ;;1. stop node itself
-                      ;;2. has outgoing link
-                      ;;3. recursively outgoing link has another outgoing link
-                      )))]
-      )))
+                          child (get-child node next-item)
+                          skip-child (when-not child
+                                       ;;it should walk from skip link to next node
+                                       (follow-skip-link tree child next-item))
+                          new-root-idx (if child
+                                         root-idx
+                                         (- data-idx (prefix-length skip-child) -1))
+                          new-root (if child
+                                     root
+                                     (drop (- new-root-idx root-idx) root))
+                          new-node (or child
+                                       (linked-node skip-child))
+                          matches (match-seq new-node
+                                             (- data-idx new-root-idx))]
+                      (lazy-seq
+                       (if (seq matches)
+                         (concat
+                          (map(fn [ends] (map (partial + new-root-idx) ends))
+                              matches)
+                          (inner (rest data)
+                                 (inc data-idx)
+                                 new-node
+                                 new-root
+                                 new-root-idx))
+                         (inner (rest data)
+                                (inc data-idx)
+                                new-node
+                                new-root
+                                new-root-idx))))))]
+      (inner data 0 tree data 0))))
+
+(defn ac-index [patterns]
+  (let [tree (box)]
+    (doseq [pattern patterns]
+      (add-word! tree pattern))
+    (add-links! tree)
+    (->ACIndex tree (get-max-length tree))))
