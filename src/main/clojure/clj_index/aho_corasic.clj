@@ -240,7 +240,7 @@
                           child (get-child node next-item)
                           skip-child (when-not child
                                        ;;it should walk from skip link to next node
-                                       (follow-skip-link tree child next-item))
+                                       (follow-skip-link tree node next-item))
                           new-root-idx (if child
                                          root-idx
                                          (- data-idx (prefix-length skip-child) -1))

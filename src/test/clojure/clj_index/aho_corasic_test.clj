@@ -219,4 +219,18 @@
   (is (= [[0 0] [1 1] [2 2] [3 3]] (match (sut/ac-index ["a"])
                                           "aaaa")))
   (is (= [[0 3] [2 3] [5 6] [7 10] [13 16]] (match (sut/ac-index ["this" "is" "test"])
-                           "this istest, test"))))
+                                                   "this istest, test")))
+  (is (= [[0 2] [1 3]] (match (sut/ac-index ["abc" "dab"])
+                              "dabcdef")))
+  (testing "Overlapping patterns"
+    (let [ranges [(range 3 8)
+                  (range 4 11)
+                  (range 5 10)
+                  (range 7 11)
+                  (range 7 12)
+                  (range 8 11)
+                  (range 8 14)]
+          expected (map (juxt first last) ranges)]
+      (is (= (into #{} expected)
+             (into #{} (match (sut/ac-index ranges)
+                              (range 0 20))))))))
