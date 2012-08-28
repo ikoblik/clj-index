@@ -1,4 +1,4 @@
-(defproject clj-index "0.0.1-SNAPSHOT"
+(defproject org.clojars.ikoblik/clj-index "0.0.2"
   :description "String indexing and matching algorithms"
   :dependencies [[org.clojure/clojure "1.4.0"]]
   :plugins [[lein-swank "1.4.4"]]

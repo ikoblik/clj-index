@@ -54,7 +54,11 @@ Aho-Corasick index can also be used for other data types:
 
 ## Installation
 
-Download the sources, and run command:
+Add dependency to project.clj:
+
+    [org.clojars.ikoblik/clj-index "0.0.2"]
+
+or download the sources, and run command:
 
     $ lein jar
 
