@@ -2,15 +2,15 @@
   (:import [mutable Box]))
 
 (defn box
-  ([]
-     (Box.))
-  ([value]
-     (Box. value)))
+  (^Box []
+        (Box.))
+  (^Box [value]
+        (Box. value)))
 
-(defn get-value [box]
+(defn get-value [^Box box]
   (when box
     @box))
 
-(defn set-value! [box value]
+(defn set-value! [^Box box value]
   (when box
     (.setValue box value)))

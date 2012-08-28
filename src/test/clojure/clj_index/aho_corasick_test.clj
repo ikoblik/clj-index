@@ -1,10 +1,11 @@
-(ns clj-index.aho-corasic-test
+(ns clj-index.aho-corasick-test
   (:use [clj-index.core :as sut] :reload-all)
   (:use [clojure.test]
-        [mutable.box]))
+        [mutable.box])
+  (:import [mutable Box]))
 
 ;;===============================================================
-;; Aho-Corasic unit tests
+;; Aho-Corasick unit tests
 ;;===============================================================
 
 (deftest get-or-add

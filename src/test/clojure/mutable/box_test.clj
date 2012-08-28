@@ -1,6 +1,7 @@
 (ns mutable.box-test
   (:use [mutable.box] :reload-all)
-  (:use [clojure.test]))
+  (:use [clojure.test])
+  (:import [mutable Box]))
 
 ;;===============================================================
 ;; Box unit tests
