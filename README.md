@@ -1,4 +1,4 @@
-# clj-index
+# clj-index [![Build Status](https://travis-ci.org/ikoblik/clj-index.png?branch=master)](https://travis-ci.org/ikoblik/clj-index)
 
 Indexing and matching library written in Clojure. Works on sequences
 of any type.
