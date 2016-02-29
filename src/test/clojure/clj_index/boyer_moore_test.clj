@@ -1,6 +1,7 @@
 (ns clj-index.boyer-moore-test
   (:use [clj-index.core :as sut] :reload-all)
-  (:use [clojure.test]))
+  (:use [clojure.test])
+  (:require [clojure.java.io :as io]))
 
 ;;===============================================================
 ;; Z index and Boyer-Moore unit tests.
@@ -151,3 +152,10 @@
     (is (= (match (bm-index "abc") "abc") [0]))
     (is (= (match (bm-index "abc") "abcabcabc") [0 3 6]))
     (is (= (match (bm-index "abc") "abc#abc#abc") [0 4 8]))))
+
+(deftest weird-error-test
+  (let [[x y] (read-string (slurp (io/resource "goodbad")))]
+    (is (.contains (last x) (second x)))
+    (is (.contains (last y) (second y)))
+    (is (not-empty (sut/match (sut/bm-index (second x)) (last x))))
+    (is (not-empty (sut/match (sut/bm-index (second y)) (last y))))))
